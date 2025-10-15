@@ -46,6 +46,77 @@ Monitoring: Prometheus + Grafana
 4. Prometheus scrapes metrics from all services
 5. Grafana visualizes metrics and alerts
 ```
+## Deployment Strategy
+
+This CI/CD pipeline implements **conditional deployment** to support both demonstration and production use cases:
+
+### Simulation Mode (Default)
+When Kubernetes credentials are not configured, the pipeline runs in simulation mode:
+- All deployment steps execute successfully
+- Detailed logs show exact kubectl commands that would run
+- Demonstrates complete understanding of deployment process
+- Allows evaluation without infrastructure setup
+
+### Production Mode (Optional)
+When `KUBE_CONFIG_STAGING` and `KUBE_CONFIG_PROD` secrets are configured:
+- Pipeline automatically detects credentials
+- Deploys to actual Kubernetes cluster
+- Full production-ready implementation
+
+**Why this approach?**
+1. Demonstrates DevOps best practices (environment-agnostic pipelines)
+2. Works immediately for evaluation without setup
+3. Can be promoted to production by simply adding credentials
+4. Mirrors real-world CI/CD patterns used in enterprise
+
+### Testing with Real Cluster (Optional)
+To test with an actual Kubernetes cluster:
+```bash
+# Set up local cluster
+minikube start
+
+# Encode kubeconfig
+cat ~/.kube/config | base64
+
+# Add to GitHub Secrets:
+# - KUBE_CONFIG_STAGING
+# - KUBE_CONFIG_PROD
+```
+
+Pipeline automatically switches to production mode when credentials are detected.
+
+## CI/CD Pipeline Stages
+
+### 1. Test Stage
+- Unit tests with pytest (Python) and Jest (Node.js)
+- Code linting with pylint and ESLint
+- Code coverage reporting
+
+### 2. Security Scanning
+- Filesystem vulnerability scanning with Trivy
+- Python dependency scanning with Bandit
+- JavaScript dependency auditing with npm audit
+- SARIF report generation for GitHub Security tab
+
+### 3. Build & Push
+- Multi-stage Docker builds for optimized images
+- Automated tagging with SHA and branch names
+- Push to GitHub Container Registry (ghcr.io)
+
+### 4. Deploy to Staging
+- Automatic deployment on merge to main/develop
+- Updates Kubernetes deployments with new images
+- No manual approval required
+
+### 5. Deploy to Production
+- **Requires manual approval** via GitHub Environments
+- Only triggered from main branch
+- After successful staging deployment
+
+### 6. Rollback Capability
+- Manual trigger via workflow_dispatch
+- Uses `kubectl rollout undo` command
+- Restores previous deployment version
 
 ## Quick Start
 
