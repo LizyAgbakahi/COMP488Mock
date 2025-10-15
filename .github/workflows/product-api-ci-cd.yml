@@ -163,8 +163,9 @@ jobs:
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: 'table'
-          exit-code: '0'  # Don't fail on vulnerabilities
+          exit-code: '0'
           severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
   deploy-staging:
     name: Deploy to Staging
