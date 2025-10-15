@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-api-config
+data:
+  flask_env: "production"
+  log_level: "INFO"
+  cache_ttl: "300"
+  max_connections: "100"

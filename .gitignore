@@ -20,4 +20,4 @@ npm-debug.log
 Thumbs.db
 
 # Secrets
-*secret*.yaml
+# *secret*.yaml
