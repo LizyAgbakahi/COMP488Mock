@@ -13,8 +13,13 @@ on:
   workflow_dispatch:  # Allow manual triggers for rollback
 
 env:
-  IMAGE_NAME: techcommerce/product-api
+  IMAGE_NAME: ${{ github.repository_owner }}/product-api
   REGISTRY: ghcr.io
+
+permissions:
+  contents: read
+  packages: write
+
 
 jobs:
   test:

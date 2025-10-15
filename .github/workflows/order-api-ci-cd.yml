@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: techcommerce/order-api
+  IMAGE_NAME: ${{ github.repository_owner }}/order-api
   REGISTRY: ghcr.io
 
 jobs:
