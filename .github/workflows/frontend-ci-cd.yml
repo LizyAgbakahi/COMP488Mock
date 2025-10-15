@@ -1,19 +1,19 @@
-name: Order API CI/CD
+name: Frontend CI/CD
 
 on:
   push:
     branches: [main, develop]
     paths:
-      - 'order-api/**'
-      - '.github/workflows/order-api-ci-cd.yml'
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'order-api/**'
+      - 'frontend/**'
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ${{ github.repository_owner }}/order-api
+  IMAGE_NAME: ${{ github.repository_owner }}/frontend
   REGISTRY: ghcr.io
 
 jobs:
@@ -24,29 +24,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: order-api/requirements.txt
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: order-api
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pylint bandit
+        working-directory: frontend
+        run: npm ci
 
       - name: Run linting
-        working-directory: order-api
-        run: pylint app.py --disable=C0114,C0116
+        working-directory: frontend
+        run: npm run lint
         continue-on-error: true
 
       - name: Run unit tests
-        working-directory: order-api
-        run: |
-          pytest --cov=. --cov-report=xml --cov-report=term
-        continue-on-error: true
+        working-directory: frontend
+        run: npm test -- --passWithNoTests --watchAll=false
 
   security-scan:
     name: Security Scanning
@@ -56,24 +52,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Bandit
-        run: pip install bandit[toml]
-
-      - name: Run Bandit security scan
-        working-directory: order-api
-        run: bandit -r . -f json -o bandit-report.json
+      - name: Run npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=moderate
         continue-on-error: true
 
       - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: 'fs'
-          scan-ref: 'order-api/'
+          scan-ref: 'frontend/'
           format: 'table'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
@@ -115,7 +103,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./order-api
+          context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -129,7 +117,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     environment:
       name: staging
-      url: https://staging-api.techcommerce.com
+      url: https://staging.techcommerce.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -152,12 +140,11 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
           
-          kubectl apply -f kubernetes/order-api-configmap.yaml -n staging
-          kubectl apply -f kubernetes/order-api-secret.yaml -n staging
-          kubectl apply -f kubernetes/order-api-deployment.yaml -n staging
-          kubectl apply -f kubernetes/order-api-service.yaml -n staging
-          kubectl set image deployment/order-api order-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n staging
-          kubectl rollout status deployment/order-api -n staging --timeout=5m
+          kubectl apply -f kubernetes/frontend-configmap.yaml -n staging
+          kubectl apply -f kubernetes/frontend-deployment.yaml -n staging
+          kubectl apply -f kubernetes/frontend-service.yaml -n staging
+          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n staging
+          kubectl rollout status deployment/frontend -n staging --timeout=5m
         continue-on-error: false
 
       - name: Deploy to Kubernetes (Simulation)
@@ -168,16 +155,15 @@ jobs:
           echo "=================================================="
           echo ""
           echo "Target Environment: staging"
-          echo "Service: order-api"
+          echo "Service: frontend"
           echo "Container Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo ""
           echo "Kubernetes commands to be executed:"
-          echo "  - kubectl apply -f kubernetes/order-api-configmap.yaml -n staging"
-          echo "  - kubectl apply -f kubernetes/order-api-secret.yaml -n staging"
-          echo "  - kubectl apply -f kubernetes/order-api-deployment.yaml -n staging"
-          echo "  - kubectl apply -f kubernetes/order-api-service.yaml -n staging"
-          echo "  - kubectl set image deployment/order-api order-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n staging"
-          echo "  - kubectl rollout status deployment/order-api -n staging --timeout=5m"
+          echo "  - kubectl apply -f kubernetes/frontend-configmap.yaml -n staging"
+          echo "  - kubectl apply -f kubernetes/frontend-deployment.yaml -n staging"
+          echo "  - kubectl apply -f kubernetes/frontend-service.yaml -n staging"
+          echo "  - kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n staging"
+          echo "  - kubectl rollout status deployment/frontend -n staging --timeout=5m"
           echo ""
           echo "Status: Deployment simulation completed successfully"
           echo "Note: To deploy to actual cluster, configure KUBE_CONFIG_STAGING secret"
@@ -190,7 +176,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://api.techcommerce.com
+      url: https://techcommerce.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -218,12 +204,11 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
           
-          kubectl apply -f kubernetes/order-api-configmap.yaml -n production
-          kubectl apply -f kubernetes/order-api-secret.yaml -n production
-          kubectl apply -f kubernetes/order-api-deployment.yaml -n production
-          kubectl apply -f kubernetes/order-api-service.yaml -n production
-          kubectl set image deployment/order-api order-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n production
-          kubectl rollout status deployment/order-api -n production --timeout=10m
+          kubectl apply -f kubernetes/frontend-configmap.yaml -n production
+          kubectl apply -f kubernetes/frontend-deployment.yaml -n production
+          kubectl apply -f kubernetes/frontend-service.yaml -n production
+          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n production
+          kubectl rollout status deployment/frontend -n production --timeout=10m
 
       - name: Deploy to Kubernetes (Simulation)
         if: steps.check_k8s.outputs.has_cluster == 'false'
@@ -233,16 +218,15 @@ jobs:
           echo "=================================================="
           echo ""
           echo "Target Environment: production"
-          echo "Service: order-api"
+          echo "Service: frontend"
           echo "Container Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo ""
           echo "Kubernetes commands to be executed:"
-          echo "  - kubectl apply -f kubernetes/order-api-configmap.yaml -n production"
-          echo "  - kubectl apply -f kubernetes/order-api-secret.yaml -n production"
-          echo "  - kubectl apply -f kubernetes/order-api-deployment.yaml -n production"
-          echo "  - kubectl apply -f kubernetes/order-api-service.yaml -n production"
-          echo "  - kubectl set image deployment/order-api order-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n production"
-          echo "  - kubectl rollout status deployment/order-api -n production --timeout=10m"
+          echo "  - kubectl apply -f kubernetes/frontend-configmap.yaml -n production"
+          echo "  - kubectl apply -f kubernetes/frontend-deployment.yaml -n production"
+          echo "  - kubectl apply -f kubernetes/frontend-service.yaml -n production"
+          echo "  - kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n production"
+          echo "  - kubectl rollout status deployment/frontend -n production --timeout=10m"
           echo ""
           echo "Status: Deployment simulation completed successfully"
           echo "Note: To deploy to actual cluster, configure KUBE_CONFIG_PROD secret"
@@ -276,8 +260,8 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
           
-          kubectl rollout undo deployment/order-api -n production
-          kubectl rollout status deployment/order-api -n production --timeout=5m
+          kubectl rollout undo deployment/frontend -n production
+          kubectl rollout status deployment/frontend -n production --timeout=5m
 
       - name: Rollback Simulation
         if: steps.check_k8s.outputs.has_cluster == 'false'
@@ -286,12 +270,12 @@ jobs:
           echo "ROLLBACK - SIMULATION MODE"
           echo "=================================================="
           echo ""
-          echo "Service: order-api"
+          echo "Service: frontend"
           echo "Environment: production"
           echo ""
           echo "Kubernetes commands to be executed:"
-          echo "  - kubectl rollout undo deployment/order-api -n production"
-          echo "  - kubectl rollout status deployment/order-api -n production"
+          echo "  - kubectl rollout undo deployment/frontend -n production"
+          echo "  - kubectl rollout status deployment/frontend -n production"
           echo ""
           echo "Status: Rollback simulation completed"
           echo "=================================================="
