@@ -641,4 +641,4 @@ This project demonstrates production-ready DevOps practices:
 **Author:** Lizy Agbakahi  
 **Repository:** https://github.com/LizyAgbakahi/COMP488Mock  
 **Course:** COMP488 - DevOps Engineering  
-**Date:** October 15, 2025
+**Date:** October 15, 2025# Kubernetes deployment tested
