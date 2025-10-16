@@ -48,39 +48,55 @@ Monitoring: Prometheus + Grafana
 ```
 ## Deployment Strategy
 
-This CI/CD pipeline implements **conditional deployment** to support both demonstration and production use cases:
+### How Deployment Works
 
-### Simulation Mode (Default)
-When Kubernetes credentials are not configured, the pipeline runs in simulation mode:
-- All deployment steps execute successfully
-- Detailed logs show exact kubectl commands that would run
-- Demonstrates complete understanding of deployment process
-- Allows evaluation without infrastructure setup
+This pipeline uses **conditional deployment** - it checks for Kubernetes credentials and adapts automatically:
 
-### Production Mode (Optional)
-When `KUBE_CONFIG_STAGING` and `KUBE_CONFIG_PROD` secrets are configured:
-- Pipeline automatically detects credentials
-- Deploys to actual Kubernetes cluster
-- Full production-ready implementation
+**Without K8s secrets (current setup):**
+- Pipeline runs in simulation mode
+- Shows exactly what kubectl commands would execute
+- All tests and builds still run normally
+- Works on any machine without setup
 
-**Why this approach?**
-1. Demonstrates DevOps best practices (environment-agnostic pipelines)
-2. Works immediately for evaluation without setup
-3. Can be promoted to production by simply adding credentials
-4. Mirrors real-world CI/CD patterns used in enterprise
+**With K8s secrets added:**
+- Pipeline detects credentials
+- Actually deploys to the cluster
+- Same code, different behavior
 
-### Testing with Real Cluster (Optional)
-To test with an actual Kubernetes cluster:
+### Why No Secrets Here?
+
+Three reasons:
+1. **Security** - Secrets shouldn't be in Git, ever
+2. **Portability** - This way anyone can run the pipeline
+3. **Practical** - You (the evaluator) don't need my local cluster credentials
+
+GitHub Secrets don't transfer when you clone repos anyway, so this approach makes evaluation easier.
+
+### What Gets Deployed
+
+The pipeline handles all three services:
+- **Product API** - Flask app on port 5000
+- **Order API** - Flask app on port 5001  
+- **Frontend** - Node.js app on port 3000
+
+Each goes through:
+1. Testing (unit tests + coverage)
+2. Security scanning (Trivy, Bandit, npm audit)
+3. Docker build and push to GitHub Container Registry
+4. Deployment (simulation shows the commands)
+
+### To Use With Real Cluster
+
+If you want to deploy to an actual cluster:
 ```bash
-# Set up local cluster
+# Set up cluster
 minikube start
 
-# Encode kubeconfig
+# Get kubeconfig
 cat ~/.kube/config | base64
 
-# Add to GitHub Secrets:
-# - KUBE_CONFIG_STAGING
-# - KUBE_CONFIG_PROD
+# Add to GitHub Secrets as KUBE_CONFIG_STAGING and KUBE_CONFIG_PROD
+# Pipeline automatically switches to real deployment
 ```
 
 Pipeline automatically switches to production mode when credentials are detected.
@@ -642,5 +658,4 @@ This project demonstrates production-ready DevOps practices:
 **Repository:** https://github.com/LizyAgbakahi/COMP488Mock  
 **Course:** COMP488 - DevOps Engineering  
 **Date:** October 15, 2025# Kubernetes deployment tested
-# Kubernetes cluster configured - deployment ready
-# Final submission ready
+
