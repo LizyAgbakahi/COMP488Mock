@@ -630,6 +630,8 @@ COMP488Mock/
 │   ├── alert-rules.yaml
 │   └── dashboard.json
 ├── .gitignore
+└── scripts/
+    └── tunnel.sh
 └── README.md
 ```
 
