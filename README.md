@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This project implements a complete DevOps infrastructure for TechCommerce Inc., an e-commerce startup transitioning from monolithic architecture to microservices. The solution includes production-ready containerization, Kubernetes orchestration, automated CI/CD pipelines, and comprehensive monitoring.
+This project implements a complete DevOps infrastructure for TechCommerce Inc., an e-commerce startup transitioning from monolithic architecture to microservices. The solution includes production-ready containerization, Kubernetes orchestration, automated CI/CD pipelines, and comprehensive monitoring, tunneling and logging.
 
 ## Table of Contents
 
