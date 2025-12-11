@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'order-api/**'
-      - '.github/workflows/order-api-ci-cd.yml'
+      - "order-api/**"
+      - ".github/workflows/order-api-ci-cd.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'order-api/**'
+      - "order-api/**"
   workflow_dispatch:
 
 env:
@@ -27,8 +27,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
           cache-dependency-path: order-api/requirements.txt
 
       - name: Install dependencies
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Bandit
         run: pip install bandit[toml]
@@ -72,11 +72,11 @@ jobs:
       - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          scan-type: 'fs'
-          scan-ref: 'order-api/'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "order-api/"
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
           ignore-unfixed: true
 
   build-and-scan:
@@ -108,7 +108,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=build-
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -151,7 +151,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl apply -f kubernetes/order-api-configmap.yaml -n staging
           kubectl apply -f kubernetes/order-api-secret.yaml -n staging
           kubectl apply -f kubernetes/order-api-deployment.yaml -n staging
@@ -217,7 +217,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl apply -f kubernetes/order-api-configmap.yaml -n production
           kubectl apply -f kubernetes/order-api-secret.yaml -n production
           kubectl apply -f kubernetes/order-api-deployment.yaml -n production
@@ -275,7 +275,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl rollout undo deployment/order-api -n production
           kubectl rollout status deployment/order-api -n production --timeout=5m
 

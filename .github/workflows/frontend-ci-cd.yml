@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend-ci-cd.yml'
+      - "frontend/**"
+      - ".github/workflows/frontend-ci-cd.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - "frontend/**"
   workflow_dispatch:
 
 env:
@@ -27,8 +27,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
@@ -60,11 +60,11 @@ jobs:
       - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          scan-type: 'fs'
-          scan-ref: 'frontend/'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "frontend/"
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
           ignore-unfixed: true
 
   build-and-scan:
@@ -96,7 +96,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=build-
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -139,7 +139,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl apply -f kubernetes/frontend-configmap.yaml -n staging
           kubectl apply -f kubernetes/frontend-deployment.yaml -n staging
           kubectl apply -f kubernetes/frontend-service.yaml -n staging
@@ -203,7 +203,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl apply -f kubernetes/frontend-configmap.yaml -n production
           kubectl apply -f kubernetes/frontend-deployment.yaml -n production
           kubectl apply -f kubernetes/frontend-service.yaml -n production
@@ -259,7 +259,7 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-          
+
           kubectl rollout undo deployment/frontend -n production
           kubectl rollout status deployment/frontend -n production --timeout=5m
 
