@@ -635,6 +635,8 @@ COMP488Mock/
 
 ---
 
+
+
 ## Conclusion
 
 This project demonstrates production-ready DevOps practices:
@@ -645,17 +647,95 @@ This project demonstrates production-ready DevOps practices:
 ✅ **Observability:** Prometheus metrics, Grafana dashboards, 4 critical alerts  
 ✅ **Cost-Optimized:** Right-sized resources, auto-scaling, optimized images
 
-**Production Enhancements:**
-- Implement HashiCorp Vault for centralized secret management
-- Add service mesh (Istio/Linkerd) for mTLS and advanced traffic management
-- Deploy ELK/EFK stack for centralized logging
-- Add Jaeger/Zipkin for distributed tracing
-- Use ArgoCD/Flux for GitOps-based deployments
-
----
-
 **Author:** Lizy Agbakahi  
 **Repository:** https://github.com/LizyAgbakahi/COMP488Mock  
 **Course:** COMP488 - DevOps Engineering  
-**Date:** October 15, 2025# Kubernetes deployment tested
+**Date:** December 12, 2025# Kubernetes deployment tested
 
+## COMP488 Final Project Updates (Tunneling, Logging, IaC)
+
+This repository extends my COMP488 midterm project to include:
+
+- ✅ `kubectl` **tunneling** to access the frontend running in Kubernetes  
+- ✅ **Structured JSON logging** for all three services (frontend, product-api, order-api)  
+- ✅ Kubernetes manifests used as **Infrastructure as Code (IaC)**
+
+### How to Run the Final Version
+
+From the project root:
+
+```bash
+# Build images
+docker build -t techcommerce/product-api:latest ./product-api
+docker build -t techcommerce/order-api:latest ./order-api
+docker build -t techcommerce/frontend:latest ./frontend
+
+# Apply Kubernetes manifests
+kubectl apply -f kubernetes/
+kubectl get pods
+
+Start the frontend tunnel:
+
+./scripts/tunnel.sh
+# Frontend -> http://localhost:8080
+
+Test key endpoints:
+
+# Frontend (through tunnel)
+curl http://localhost:8080/
+
+# Product API
+curl http://localhost:5000/health
+curl http://localhost:5000/products
+
+# Order API
+curl http://localhost:5001/health
+curl http://localhost:5001/orders
+curl http://localhost:5001/orders/999   # returns 404 and WARNING log
+
+Logging
+
+All services now use structured JSON logs suitable for centralized logging:
+
+Frontend (frontend/server.js) logs:
+
+    level, message, method, path, time
+
+Product API (product-api/app.py) logs:
+
+    health checks, product requests, and 404s as JSON
+
+Order API (order-api/app.py) logs:
+
+    order fetches, not-found orders as JSON (INFO/WARNING)
+
+View logs with:
+
+    kubectl logs $(kubectl get pods -o name | grep order-api | head -n1)    
+
+## Infrastructure as Code
+
+The kubernetes/ directory contains the IaC for this project:
+
+Deployments and Services for:
+
+  frontend
+
+  product-api
+
+  order-api
+
+Probes:
+
+  Liveness: /health
+
+  Readiness: /ready
+
+  Resource requests/limits and non-root securityContext
+
+  These manifests define the full runtime behavior declaratively and are applied with:
+
+      kubectl apply -f kubernetes/
+
+
+This satisfies the COMP488 final requirements for tunneling, logging, and infrastructure as code on top of the original midterm project.

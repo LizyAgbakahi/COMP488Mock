@@ -1,8 +1,36 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
+import logging
+import json
+import sys
 from datetime import datetime
 
 app = Flask(__name__)
+
+# ---------- JSON Logging Setup ----------
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+        }
+        # Attach request path if available
+        try:
+            log_record["path"] = request.path
+        except RuntimeError:
+            log_record["path"] = None
+        return json.dumps(log_record)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JsonFormatter())
+
+# Prevent duplicate logs
+app.logger.handlers.clear()
+app.logger.setLevel(logging.INFO)
+app.logger.addHandler(handler)
+
+# ---------------------------------------------------------------
 
 # Sample order data
 ORDERS = [
@@ -14,7 +42,7 @@ ORDERS = [
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Liveness probe endpoint"""
+    app.logger.info("Health check for order-api")
     return jsonify({
         "status": "healthy", 
         "service": "order-api"
@@ -22,7 +50,7 @@ def health():
 
 @app.route('/ready', methods=['GET'])
 def ready():
-    """Readiness probe endpoint"""
+    app.logger.info("Readiness check for order-api")
     return jsonify({
         "status": "ready", 
         "service": "order-api"
@@ -30,7 +58,7 @@ def ready():
 
 @app.route('/', methods=['GET'])
 def index():
-    """Root endpoint"""
+    app.logger.info("Root endpoint called")
     return jsonify({
         "message": "Order API",
         "version": "1.0.0",
@@ -43,16 +71,22 @@ def index():
 
 @app.route('/orders', methods=['GET'])
 def get_orders():
-    """Get all orders"""
+    app.logger.info("GET /orders - returning all orders")
     return jsonify({"orders": ORDERS}), 200
 
 @app.route('/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
-    """Get specific order by ID"""
+    app.logger.info(f"GET /orders/{order_id} called")
     order = next((o for o in ORDERS if o['id'] == order_id), None)
+
     if order:
+        app.logger.info(f"Order {order_id} found")
         return jsonify(order), 200
+
+    app.logger.warning(f"Order {order_id} not found")
     return jsonify({"error": "Order not found"}), 404
+
+# ---------------------------------------------------------------
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
