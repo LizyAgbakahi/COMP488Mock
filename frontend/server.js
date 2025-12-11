@@ -19,7 +19,7 @@ function logRequest(req, res, next) {
 app.use(express.json());
 app.use(logRequest);
 
-// Health check endpoint (for Kubernetes liveness probe)
+// ---------- Health Check Endpoints ----------
 app.get('/health', (req, res) => {
     console.log(JSON.stringify({
         level: 'INFO',
@@ -34,7 +34,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Readiness check endpoint (for Kubernetes readiness probe)
 app.get('/ready', (req, res) => {
     console.log(JSON.stringify({
         level: 'INFO',
@@ -49,25 +48,65 @@ app.get('/ready', (req, res) => {
     });
 });
 
-// Home route
+// ---------- Root HTML Route ----------
 app.get('/', (req, res) => {
     console.log(JSON.stringify({
         level: 'INFO',
-        message: 'Rendering root frontend endpoint',
+        message: 'Rendering HTML homepage',
         time: new Date().toISOString()
     }));
 
-    res.json({
-        message: 'TechCommerce Frontend',
-        version: '1.0.0',
-        endpoints: {
-            health: '/health',
-            ready: '/ready'
-        }
-    });
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>TechCommerce Frontend</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                }
+                .container {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                    max-width: 500px;
+                    text-align: center;
+                }
+                h1 { color: #333; margin-bottom: 10px; }
+                p { color: #555; }
+                .status {
+                    margin-top: 20px;
+                    padding: 10px 15px;
+                    background: #e3ffe3;
+                    border: 1px solid #9ccd9c;
+                    border-radius: 8px;
+                    color: #2a662a;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Welcome to TechCommerce</h1>
+                <p>Your microservices frontend is running successfully.</p>
+                <div class="status">Status: OK ✓</div>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
-// Start server
+// ---------- Start Server ----------
 app.listen(PORT, () => {
     console.log(JSON.stringify({
         level: 'INFO',
